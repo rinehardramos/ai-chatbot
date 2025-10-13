@@ -28,6 +28,7 @@ jobs:
 
       - name: Build Lambda Package
         run: |
+          ls dist/lambda/
           npm run build
           mkdir deploy-package
           cp dist/lambda/index.js deploy-package/
