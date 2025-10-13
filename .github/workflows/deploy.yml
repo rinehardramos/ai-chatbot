@@ -46,25 +46,25 @@ jobs:
           GITHUB_ENVIRONMENT: ${{ github.event.branch }}
         run: |
           aws lambda create-function \
-            --function-name ${GITHUB_ENVIRONMENT}-chatbot-lambda \
+            --function-name dev-chatbot-lambda \
             --runtime nodejs18.x \
             --role arn:aws:iam::${AWS_ACCOUNT_ID}:role/LambdaExecutionRole \
             --handler index.handler \
             --zip-file fileb://lambda-deployment.zip \
             || aws lambda update-function-code \
-                --function-name ${GITHUB_ENVIRONMENT}-chatbot-lambda \
+                --function-name dev-chatbot-lambda \
                 --zip-file fileb://lambda-deployment.zip
 
       - name: Deploy to Lambda
         run: |
           aws lambda update-function-configuration \
-            --function-name ${GITHUB_ENVIRONMENT}-chatbot-lambda \
+            --function-name dev-chatbot-lambda \
             --environment Variables={BUCKET_NAME=my-bucket}
           aws lambda publish-version \
-            --function-name ${GITHUB_ENVIRONMENT}-chatbot-lambda
+            --function-name dev-chatbot-lambda
 
       - name: Verify Deployment
         run: |
           aws lambda get-function-configuration \
-            --function-name ${GITHUB_ENVIRONMENT}-chatbot-lambda
+            --function-name dev-chatbot-lambda
         continue-on-error: true
