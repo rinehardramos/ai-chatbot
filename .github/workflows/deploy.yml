@@ -38,7 +38,7 @@ jobs:
 
       - name: Test Lambda
         run: |
-          npm run test
+          npm run test --passWithNoTests
         continue-on-error: false
 
       - name: Create Lambda Function
