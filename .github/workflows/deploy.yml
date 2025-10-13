@@ -33,7 +33,8 @@ jobs:
           mkdir deploy-package
           cp dist/lambda/src/index.js deploy-package/
           cd deploy-package
-          zip ../lambda-deployment.zip .
+          ls
+          zip ../lambda-deployment.zip *
 
       - name: Test Lambda
         run: |
