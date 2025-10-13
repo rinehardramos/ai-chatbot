@@ -25,10 +25,10 @@ jobs:
       - name: Install Dependencies
         run: |
           npm ci
-          npm run build
 
       - name: Build Lambda Package
         run: |
+          npm run build
           mkdir deploy-package
           cp dist/lambda/index.js deploy-package/
           cd deploy-package
