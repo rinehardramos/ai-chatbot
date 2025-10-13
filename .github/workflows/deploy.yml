@@ -70,6 +70,11 @@ jobs:
           aws lambda update-function-configuration \
             --function-name dev-chatbot-lambda \
             --environment Variables={BUCKET_NAME=my-bucket}
+
+          while [ "$(aws lambda get-function-configuration --function-name dev-chatbot-lambda --query 'LastUpdateStatus')" != "\"Successful\"" ]; do
+              sleep 5
+          done
+            
           aws lambda publish-version \
             --function-name dev-chatbot-lambda
 
