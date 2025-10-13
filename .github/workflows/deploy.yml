@@ -17,6 +17,11 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: 'us-east-1'
 
+      - name: Check IAM Role
+        run: |
+          aws iam get-role --role-name LambdaExecutionRole > /dev/null || \
+          echo "Error: LambdaExecutionRole does not exist"
+
       - name: Setup Node.js
         uses: actions/setup-node@v2
         with:
