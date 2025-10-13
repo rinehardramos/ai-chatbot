@@ -59,6 +59,11 @@ jobs:
             || aws lambda update-function-code \
                 --function-name dev-chatbot-lambda \
                 --zip-file fileb://lambda-deployment.zip
+          
+          echo "Waiting for function to become active..."
+          while [ "$(aws lambda get-function --function-name "dev-chatbot-lambda" --query 'Configuration.State')" != "\"Active\"" ]; do
+            sleep 5
+          done
 
       - name: Deploy to Lambda
         run: |
