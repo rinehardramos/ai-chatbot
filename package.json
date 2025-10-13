@@ -5,8 +5,8 @@
   "main": "dist/app.js",
   "scripts": {
     "build": "tsc",
-    "test": "jest",
-    "cdk": "cdk",
+    "test": "jest"
+    // "cdk": "cdk",
     // "ci": "npm ci && npm run build && npm test",
     // "package": "npm run build && mkdir -p deploy-package && cp dist/lambda/index.js deploy-package/ && cd deploy-package && zip ../lambda-deployment.zip ."
   },
