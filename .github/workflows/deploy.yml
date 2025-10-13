@@ -48,7 +48,7 @@ jobs:
           aws lambda create-function \
             --function-name dev-chatbot-lambda \
             --runtime nodejs18.x \
-            --role arn:aws:iam::${secrets.AWS_ACCOUNT_ID}:role/LambdaExecutionRole \
+            --role arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/LambdaExecutionRole \
             --handler index.handler \
             --zip-file fileb://lambda-deployment.zip \
             || aws lambda update-function-code \
