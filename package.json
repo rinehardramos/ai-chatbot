@@ -1,0 +1,20 @@
+{
+  "name": "ai-chatbot",
+  "version": "1.0.0",
+  "description": "AI Chatbot using AWS Lambda",
+  "main": "dist/app.js",
+  "scripts": {
+    "build": "tsc",
+    "test": "jest",
+    "cdk": "cdk"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.66",
+    "@types/jest": "^27.0.3",
+    "@types/node": "^16.18.126",
+    "aws-cdk-lib": "^2.219.0",
+    "jest": "^27.4.5",
+    "ts-jest": "^27.0.3",
+    "typescript": "^4.9.5"
+  }
+}

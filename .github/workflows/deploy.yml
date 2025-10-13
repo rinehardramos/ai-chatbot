@@ -1,0 +1,68 @@
+name: Lambda CI/CD Pipeline
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: 'us-east-1'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '18'
+
+      - name: Install Dependencies
+        run: |
+          npm ci
+          npm run build
+
+      - name: Build Lambda Package
+        run: |
+          mkdir deploy-package
+          cp dist/lambda/index.js deploy-package/
+          cd deploy-package
+          zip ../lambda-deployment.zip .
+
+      - name: Test Lambda
+        run: |
+          npm run test
+        continue-on-error: false
+
+      - name: Create Lambda Function
+        env:
+          GITHUB_ENVIRONMENT: ${{ github.event.branch }}
+        run: |
+          aws lambda create-function \
+            --function-name ${GITHUB_ENVIRONMENT}-chatbot-lambda \
+            --runtime nodejs18.x \
+            --role arn:aws:iam::${AWS_ACCOUNT_ID}:role/LambdaExecutionRole \
+            --handler index.handler \
+            --zip-file fileb://lambda-deployment.zip \
+            || aws lambda update-function-code \
+                --function-name ${GITHUB_ENVIRONMENT}-chatbot-lambda \
+                --zip-file fileb://lambda-deployment.zip
+
+      - name: Deploy to Lambda
+        run: |
+          aws lambda update-function-configuration \
+            --function-name ${GITHUB_ENVIRONMENT}-chatbot-lambda \
+            --environment Variables={BUCKET_NAME=my-bucket}
+          aws lambda publish-version \
+            --function-name ${GITHUB_ENVIRONMENT}-chatbot-lambda
+
+      - name: Verify Deployment
+        run: |
+          aws lambda get-function-configuration \
+            --function-name ${GITHUB_ENVIRONMENT}-chatbot-lambda
+        continue-on-error: true
