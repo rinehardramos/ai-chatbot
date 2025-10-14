@@ -41,12 +41,9 @@ jobs:
         run: |
           npm test -- --passWithNoTests
         continue-on-error: false
-      - name: Set up CDK environment
-          uses: actions/setup-python@v4
-          with:
-            python-version: '3.10'
       - name: Install CDK dependencies
         run: |
+          python3 --version
           pwd
           cd ../cdk
           ls -l
