@@ -45,7 +45,8 @@ jobs:
         run: |
           python3 --version
           pwd
-          cd ../cdk
+          ls -l
+          cd cdk
           ls -l
           pip install -r requirements.txt
           pip install aws-cdk-lib constructs
