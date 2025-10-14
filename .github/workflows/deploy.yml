@@ -3,6 +3,10 @@ on:
   push:
     branches:
       - main
+env:
+  COMMIT_HASH: ${{ github.sha }}
+  FUNCTION_NAME: "ai-chatbot-$COMMIT_HASH"
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -34,47 +38,37 @@ jobs:
           cd deploy-package
           ls
           zip ../lambda-deployment.zip *
-      - name: Get Commit Hash
-        run: |
-          echo "COMMIT_HASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
       - name: Test Lambda
         run: |
           npm test -- --passWithNoTests
         continue-on-error: false
       - name: Create Lambda Function
-        env:
-          COMMIT_HASH: ${{ github.sha }}
-          FUNCTION_NAME: "ai-chatbot-${{ COMMIT_HASH }}"
         run: |
           aws lambda create-function \
-            --function-name "${{ FUNCTION_NAME }}" \
+            --function-name "$FUNCTION_NAME" \
             --runtime nodejs18.x \
             --role arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/LambdaExecutionRole \
             --handler index.handler \
             --zip-file fileb://lambda-deployment.zip \
           || aws lambda update-function-code \
-            --function-name "${{ FUNCTION_NAME }}" \
+            --function-name "$FUNCTION_NAME" \
             --zip-file fileb://lambda-deployment.zip
           echo "Waiting for function to become active..."
-          while [ "$(aws lambda get-function --function-name "${{ FUNCTION_NAME }}" --query 'Configuration.State')" != "\"Active\"" ]; do
+          while [ "$(aws lambda get-function --function-name "${FUNCTION_NAME}" --query 'Configuration.State')" != "\"Active\"" ]; do
             sleep 5
           done
       - name: Deploy to Lambda
-        env:
-          FUNCTION_NAME: "ai-chatbot-${{ COMMIT_HASH }}"
         run: |
           aws lambda update-function-configuration \
-            --function-name "${{ FUNCTION_NAME }}" \
+            --function-name "$FUNCTION_NAME" \
             --environment Variables={BUCKET_NAME=my-bucket}
-          while [ "$(aws lambda get-function-configuration --function_name ${{ FUNCTION_NAME }} --query 'LastUpdateStatus')" != "\"Successful\"" ]; do
+          while [ "$(aws lambda get-function-configuration --function_name $FUNCTION_NAME --query 'LastUpdateStatus')" != "\"Successful\"" ]; do
             sleep 5
           done
           aws lambda publish-version \
-            --function-name "${{ FUNCTION_NAME }}"
+            --function-name "$FUNCTION_NAME"
       - name: Verify Deployment
-        env:
-          FUNCTION_NAME: "ai-chatbot-${{ COMMIT_HASH }}"
         run: |
           aws lambda get-function-configuration \
-            --function-name "${{ FUNCTION_NAME }}"
+            --function-name "$FUNCTION_NAME"
         continue-on-error: true
