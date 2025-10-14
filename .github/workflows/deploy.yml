@@ -54,7 +54,7 @@ jobs:
             --capabilities CAPABILITY_IAM \
             --parameter-overrides \
               FunctionName="ai-chatbot-${{ github.sha }}" \
-              S3Bucket="${secrets.S3_BUCKET_NAME}" \
+              S3Bucket="${{ secrets.S3_BUCKET_NAME }}" \
               S3ObjectKey="lambda-deployment-${{ github.sha }}.zip"
          
       - name: Verify Deployment
