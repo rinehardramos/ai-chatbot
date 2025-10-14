@@ -45,7 +45,9 @@ jobs:
         run: |
           aws s3 cp lambda-deployment.zip s3://${{ secrets.S3_BUCKET_NAME }}/lambda-deployment-${{ github.sha }}.zip
       - name: Substitute template variables
-        run: sed -i "s/\${{ secrets.S3_BUCKET_NAME }}/S3_BUCKET_NAME/g" sam-template.yaml
+        run: |
+          sed -i "s/\${{ secrets.S3_BUCKET_NAME }}/S3_BUCKET_NAME/g" sam-template.yaml
+          sed -i "s/lambda-deployment-\${{ github.sha }}.zip/S3_OBJECT_KEY/g" sam-template.yaml
       - name: Deploy Using SAM
         run: |
           aws cloudformation deploy \

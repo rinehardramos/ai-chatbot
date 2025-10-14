@@ -50,4 +50,4 @@ Resources:
               - Effect: Allow
                 Action:
                   - s3:GetObject
-                Resource: !Sub 'arn:aws:s3:::${S3Bucket}/${S3ObjectKey}'
+                Resource: !Sub 'arn:aws:s3:::S3_BUCKET_NAME/S3_OBJECT_KEY'
