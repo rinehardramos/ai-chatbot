@@ -41,19 +41,6 @@ jobs:
         run: |
           npm test -- --passWithNoTests
         continue-on-error: false
-      - name: Install CDK dependencies
-        run: |
-          python3 --version
-          pwd
-          ls -l
-          cd cdk
-          ls -l
-          pip install -r requirements.txt
-          pip install aws-cdk-lib constructs
-      - name: Synthesize CDK
-        run: cdk synth
-      - name: Create Cloud Infra
-        run: cdk deploy --require-approval never
       - name: Create Lambda Function
         run: |
           aws lambda create-function \

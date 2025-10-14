@@ -1,5 +1,0 @@
-# asciidoc3
-aws-cdk.core
-asciidoc>=10.2.1
-aws-cdk-lib
-constructs
