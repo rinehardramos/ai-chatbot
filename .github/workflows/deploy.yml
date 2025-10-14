@@ -41,28 +41,20 @@ jobs:
         run: |
           npm test -- --passWithNoTests
         continue-on-error: false
-      - name: Create Lambda Function
+      - name: Upload to S3
         run: |
-          aws lambda create-function \
-            --function-name "$FUNCTION_NAME" \
-            --runtime nodejs18.x \
-            --role arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/LambdaExecutionRole \
-            --handler index.handler \
-            --zip-file fileb://lambda-deployment.zip \
-          || aws lambda update-function-code \
-            --function-name "$FUNCTION_NAME" \
-            --zip-file fileb://lambda-deployment.zip
-          echo "Waiting for function to become active..."
-          aws lambda wait function-active --function-name "${FUNCTION_NAME}"
-      - name: Deploy to Lambda
+          aws s3 cp lambda-deployment.zip s3://${{ secrets.S3_BUCKET_NAME }}/lambda-deployment-${{ github.sha }}.zip
+      - name: Deploy Using SAM
         run: |
-          echo "$FUNCTION_NAME" 
-          aws lambda update-function-configuration \
-            --function-name "$FUNCTION_NAME" \
-            --environment Variables={BUCKET_NAME=codev-demo}
-          aws lambda wait function-updated --function-name "${FUNCTION_NAME}"
-          aws lambda publish-version \
-            --function-name "$FUNCTION_NAME"
+          aws cloudformation deploy \
+            --template-file sam-template.yaml \
+            --stack-name ai-chatbot-stack \
+            --capabilities CAPABILITY_IAM \
+            --parameter-overrides \
+              FunctionName="ai-chatbot-${{ github.sha }}" \
+              S3Bucket="${secrets.S3_BUCKET_NAME}" \
+              S3ObjectKey="lambda-deployment-${{ github.sha }}.zip"
+         
       - name: Verify Deployment
         run: |
           aws lambda get-function-configuration \
