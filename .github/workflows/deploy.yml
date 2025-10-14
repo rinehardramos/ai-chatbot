@@ -53,18 +53,14 @@ jobs:
             --function-name "$FUNCTION_NAME" \
             --zip-file fileb://lambda-deployment.zip
           echo "Waiting for function to become active..."
-          while [ "$(aws lambda get-function --function-name "$FUNCTION_NAME" --query 'Configuration.State')" != "\"Active\"" ]; do
-            sleep 5
-          done
+          aws lambda wait function-active --function-name "${FUNCTION_NAME}"
       - name: Deploy to Lambda
         run: |
           echo "$FUNCTION_NAME" 
           aws lambda update-function-configuration \
             --function-name "$FUNCTION_NAME" \
             --environment Variables={BUCKET_NAME=codev-demo}
-          while [ "$(aws lambda get-function-configuration --function_name "$FUNCTION_NAME" --query 'LastUpdateStatus')" != "\"Successful\"" ]; do
-            sleep 5
-          done
+          aws lambda wait function-updated --function-name "${FUNCTION_NAME}"
           aws lambda publish-version \
             --function-name "$FUNCTION_NAME"
       - name: Verify Deployment
