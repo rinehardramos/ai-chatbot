@@ -16,6 +16,15 @@ Resources:
     Properties:
       FunctionName: !Ref FunctionName
       Runtime: nodejs18.x
+      FunctionUrl:
+        AuthType: NONE
+        Cors:
+          AllowHeaders:
+            - Content-Type
+            - X-Amz-Date
+            - Authorization
+          AllowOrigin: "'*'"
+          AllowMethods: "'GET,POST'"
       Handler: index.handler
       CodeUri: .
       Description: AI chatbot function
