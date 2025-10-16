@@ -79,7 +79,7 @@ jobs:
             --function-name "$FUNCTION_NAME" \
             --auth-type NONE \
             --cors AllowHeaders="Content-Type,X-Amz-Date,Authorization" \
-            --cors AllowOrigins="*" \
+            --cors AllowOrigins=* \
             --cors AllowMethods="GET,POST"
       - name: Verify Deployment
         run: |
