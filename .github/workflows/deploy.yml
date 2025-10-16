@@ -76,7 +76,7 @@ jobs:
         run: |
           aws lambda create-function-url-config \
           --cli-input-json '{
-            "FunctionName": "$FUNCTION_NAME",
+            "FunctionName": $FUNCTION_NAME,
             "AuthType": "NONE",
             "Cors": {
               "AllowHeaders": ["Content-Type", "X-Amz-Date", "Authorization"],
