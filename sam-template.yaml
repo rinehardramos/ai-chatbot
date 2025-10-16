@@ -16,23 +16,32 @@ Resources:
     Properties:
       FunctionName: !Ref FunctionName
       Runtime: nodejs18.x
-      FunctionUrl:
-        AuthType: NONE
-        Cors:
-          AllowHeaders:
-            - Content-Type
-            - X-Amz-Date
-            - Authorization
-          AllowOrigin: "'*'"
-          AllowMethods: "'GET,POST'"
       Handler: index.handler
       CodeUri: .
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: '/chat'
+            Method: get
+            FunctionUrl:
+              AuthType: NONE
+              Cors:
+                AllowHeaders:
+                  - Content-Type
+                  - X-Amz-Date
+                  - Authorization
+                AllowOrigin: "'*'"
+                AllowMethods: "'GET,POST'"
       Description: AI chatbot function
       MemorySize: 256
       Timeout: 15
       Role: !GetAtt LambdaExecutionRole.Arn
+      Policies:
+        - AWSLambdaExecute
       Environment:
         Variables:
+          FUNCTION_NAME: !Ref ChatBotFunction
           BUCKET_NAME: !Sub S3_BUCKET_NAME
 
   LambdaExecutionRole:
