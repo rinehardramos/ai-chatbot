@@ -5,7 +5,7 @@ on:
       - main
 env:
   FUNCTION_NAME: 'ai-chatbot-${{ github.sha }}'
-
+  S3_BUCKET_NAME: '${{ secrets.S3_BUCKET_NAME }}'
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -40,27 +40,46 @@ jobs:
       - name: Test Lambda
         run: |
           npm test -- --passWithNoTests
-        continue-on-error: false
+          continue-on-error: false
+      - name: Create S3 Bucket if not exists
+        run: |
+          if ! aws s3 ls s3://${S3_BUCKET_NAME} 2>/dev/null; then
+            echo "Creating S3 bucket ${S3_BUCKET_NAME}"
+            aws s3 mb s3://${S3_BUCKET_NAME} --region us-east-1
+          else
+            echo "S3 bucket ${S3_BUCKET_NAME} already exists, skipping creation"
+          fi
       - name: Upload to S3
         run: |
-          aws s3 cp lambda-deployment.zip s3://${{ secrets.S3_BUCKET_NAME }}/lambda-deployment-${{ github.sha }}.zip
-      - name: Substitute template variables
+          aws s3 cp lambda-deployment.zip s3://${S3_BUCKET_NAME}/lambda-deployment-${github.sha}.zip
+      - name: Create Lambda Function if not exists
         run: |
-          sed -i "s/\${{ secrets.S3_BUCKET_NAME }}/S3_BUCKET_NAME/g" sam-template.yaml
-          sed -i "s/lambda-deployment-${{ github.sha }}.zip/S3_OBJECT_KEY/g" sam-template.yaml
-      - name: Deploy Using SAM
+          if ! aws lambda get-function-configuration --function-name ${FUNCTION_NAME} 2>/dev/null; then
+            echo "Creating Lambda function ${FUNCTION_NAME}"
+            aws lambda create-function \
+              --function-name ${FUNCTION_NAME} \
+              --runtime nodejs18.x \
+              --role arn:aws:iam::${AWS_ACCOUNT_ID}:role/LambdaExecutionRole \
+              --handler index.handler \
+              --code S3Bucket=${S3_BUCKET_NAME},S3Key=lambda-deployment-${github.sha}.zip \
+              --publish
+          else
+            echo "Lambda function ${FUNCTION_NAME} already exists, updating"
+            aws lambda update-function-code \
+              --function-name ${FUNCTION_NAME} \
+              --s3-bucket ${S3_BUCKET_NAME} \
+              --s3-key lambda-deployment-${github.sha}.zip \
+              --publish
+          fi
+      - name: Create Function URL
         run: |
-          aws cloudformation deploy \
-            --template-file sam-template.yaml \
-            --stack-name ai-chatbot-stack \
-            --capabilities CAPABILITY_IAM \
-            --parameter-overrides \
-              FunctionName="ai-chatbot-${{ github.sha }}" \
-              S3Bucket="${{ secrets.S3_BUCKET_NAME }}" \
-              S3ObjectKey="lambda-deployment-${{ github.sha }}.zip"
-         
+          aws lambda create-function-url-config \
+            --function-name ${FUNCTION_NAME} \
+            --auth-type NONE \
+            --cors 'AllowHeaders=["Content-Type","X-Amz-Date","Authorization"]' \
+            --cors 'AllowOrigins=["*"]' \
+            --cors 'AllowMethods=["GET,POST"]'
       - name: Verify Deployment
         run: |
-          aws lambda get-function-configuration \
-            --function-name "$FUNCTION_NAME"
-        continue-on-error: true
+          aws lambda get-function-configuration --function-name ${FUNCTION_NAME}
+          aws lambda get-function-url-config --function-name ${FUNCTION_NAME}
