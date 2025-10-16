@@ -75,11 +75,11 @@ jobs:
       - name: Create Function URL
         run: |
           aws lambda create-function-url-config \
-            --function-name $FUNCTION_NAME \
-            --auth-type NONE \
-            --cors AllowHeaders="Content-Type","X-Amz-Date","Authorization" \
-            --cors AllowOrigins="*" \
-            --cors AllowMethods="GET,POST"
+          --function-name ${FUNCTION_NAME} \
+          --auth-type NONE \
+          --cors AllowHeaders="Content-Type,X-Amz-Date,Authorization" \
+          --cors AllowOrigins="*" \
+          --cors AllowMethods="GET,POST"
       - name: Verify Deployment
         run: |
           aws lambda get-function-configuration --function-name $FUNCTION_NAME
