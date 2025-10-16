@@ -43,43 +43,43 @@ jobs:
           npm test -- --passWithNoTests
       - name: Create S3 Bucket if not exists
         run: |
-          if ! aws s3 ls s3://${S3_BUCKET_NAME} 2>/dev/null; then
-            echo "Creating S3 bucket ${S3_BUCKET_NAME}"
-            aws s3 mb s3://${S3_BUCKET_NAME} --region us-east-1
+          if ! aws s3 ls s3://$S3_BUCKET_NAME 2>/dev/null; then
+            echo "Creating S3 bucket $S3_BUCKET_NAME"
+            aws s3 mb s3://$S3_BUCKET_NAME --region us-east-1
           else
-            echo "S3 bucket ${S3_BUCKET_NAME} already exists, skipping creation"
+            echo "S3 bucket $S3_BUCKET_NAME already exists, skipping creation"
           fi
       - name: Upload to S3
         run: |
-          aws s3 cp lambda-deployment.zip s3://${S3_BUCKET_NAME}/lambda-deployment-${github.sha}.zip
+          aws s3 cp lambda-deployment.zip s3://$S3_BUCKET_NAME/$FUNCTION_NAME.zip
       - name: Create Lambda Function if not exists
         run: |
-          if ! aws lambda get-function-configuration --function-name ${FUNCTION_NAME} 2>/dev/null; then
-            echo "Creating Lambda function ${FUNCTION_NAME}"
+          if ! aws lambda get-function-configuration --function-name $FUNCTION_NAME 2>/dev/null; then
+            echo "Creating Lambda function $FUNCTION_NAME"
             aws lambda create-function \
-              --function-name ${FUNCTION_NAME} \
+              --function-name $FUNCTION_NAME \
               --runtime nodejs18.x \
               --role arn:aws:iam::${AWS_ACCOUNT_ID}:role/LambdaExecutionRole \
               --handler index.handler \
-              --code S3Bucket=${S3_BUCKET_NAME},S3Key=lambda-deployment-${github.sha}.zip \
+              --code S3Bucket=$S3_BUCKET_NAME,S3Key=$FUNCTION_NAME.zip \
               --publish
           else
-            echo "Lambda function ${FUNCTION_NAME} already exists, updating"
+            echo "Lambda function $FUNCTION_NAME already exists, updating"
             aws lambda update-function-code \
-              --function-name ${FUNCTION_NAME} \
-              --s3-bucket ${S3_BUCKET_NAME} \
-              --s3-key lambda-deployment-${github.sha}.zip \
+              --function-name $FUNCTION_NAME \
+              --s3-bucket $S3_BUCKET_NAME \
+              --s3-key $FUNCTION_NAME.zip \
               --publish
           fi
       - name: Create Function URL
         run: |
           aws lambda create-function-url-config \
-            --function-name ${FUNCTION_NAME} \
+            --function-name $FUNCTION_NAME \
             --auth-type NONE \
             --cors 'AllowHeaders=["Content-Type","X-Amz-Date","Authorization"]' \
             --cors 'AllowOrigins=["*"]' \
             --cors 'AllowMethods=["GET,POST"]'
       - name: Verify Deployment
         run: |
-          aws lambda get-function-configuration --function-name ${FUNCTION_NAME}
-          aws lambda get-function-url-config --function-name ${FUNCTION_NAME}
+          aws lambda get-function-configuration --function-name $FUNCTION_NAME
+          aws lambda get-function-url-config --function-name $FUNCTION_NAME
