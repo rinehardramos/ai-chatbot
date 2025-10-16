@@ -6,6 +6,7 @@ on:
 env:
   FUNCTION_NAME: 'ai-chatbot-${{ github.sha }}'
   S3_BUCKET_NAME: '${{ secrets.S3_BUCKET_NAME }}'
+  AWS_ACCOUNT_ID: '${{ secrets.AWS_ACCOUNT_ID }}'
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -59,7 +60,7 @@ jobs:
             aws lambda create-function \
               --function-name $FUNCTION_NAME \
               --runtime nodejs18.x \
-              --role arn:aws:iam::${AWS_ACCOUNT_ID}:role/LambdaExecutionRole \
+              --role arn:aws:iam::$AWS_ACCOUNT_ID:role/LambdaExecutionRole \
               --handler index.handler \
               --code S3Bucket=$S3_BUCKET_NAME,S3Key=$FUNCTION_NAME.zip \
               --publish
