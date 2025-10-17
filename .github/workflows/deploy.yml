@@ -16,7 +16,7 @@ env:
   FUNCTION_NAME: 'ai-chatbot-${{ github.sha }}'
   S3_BUCKET_NAME: '${{ secrets.S3_BUCKET_NAME }}'
   AWS_ACCOUNT_ID: '${{ secrets.AWS_ACCOUNT_ID }}'
-  REGION: '${REGION}'
+  REGION: 'us-east-1'
 
 jobs:
   build:
