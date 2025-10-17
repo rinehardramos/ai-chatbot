@@ -72,7 +72,8 @@ jobs:
       - name: Upload to S3
         run: |
           pwd
-          aws s3 cp lambda-deployment.zip s3://$S3_BUCKET_NAME/$FUNCTION_NAME.zip
+          ls -la
+          aws s3 cp /home/runner/work/ai-chatbot/ai-chatbot/lambda-deployment.zip s3://$S3_BUCKET_NAME/$FUNCTION_NAME.zip
       - name: Create Lambda Function if not exists
         run: |
           if ! aws lambda get-function-configuration --function-name $FUNCTION_NAME 2>/dev/null; then
