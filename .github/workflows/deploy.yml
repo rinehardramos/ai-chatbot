@@ -10,13 +10,13 @@ on:
         description: 'Whether to deploy or clean up'
         required: true
         default: 'deploy'
-        choices: ['deploy', 'cleanup']
+        # choices: ['deploy', 'cleanup']
 
 env:
   FUNCTION_NAME: 'ai-chatbot-${{ github.sha }}'
   S3_BUCKET_NAME: '${{ secrets.S3_BUCKET_NAME }}'
   AWS_ACCOUNT_ID: '${{ secrets.AWS_ACCOUNT_ID }}'
-  REGION: 'us-east-1'
+  AWS_REGION: 'us-east-1'
 
 jobs:
   build:
@@ -43,6 +43,8 @@ jobs:
           cd deploy-package
           cat index.js
           zip ../lambda-deployment.zip *
+          cd ..
+          ls -la lambda-deployment.zip  # Verify package exists
 
   deploy:
     runs-on: ubuntu-latest
