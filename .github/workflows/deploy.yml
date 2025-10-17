@@ -60,7 +60,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     needs: [build]
-    if: github.event.action_type == 'deploy' || github.event_name == 'push'
+    if: ${{ github.event.inputs.target_job == 'deploy' }}
     steps:
       - uses: aws-actions/configure-aws-credentials@v1
         with:
@@ -131,7 +131,7 @@ jobs:
   cleanup:
     needs: [deploy]
     runs-on: ubuntu-latest
-    if: github.event.action_type == 'cleanup'
+    if: ${{ github.event.inputs.target_job == 'cleanup' }}
     steps:
       - uses: aws-actions/configure-aws-credentials@v1
         with:
