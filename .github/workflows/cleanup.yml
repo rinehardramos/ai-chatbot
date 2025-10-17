@@ -1,0 +1,52 @@
+name: Cleanup Lambda Function
+on:
+  workflow_dispatch:
+    inputs:
+      target_job:
+        description: 'Whether to deploy or clean up'
+        required: true
+        default: 'cleanup'
+        type: choice
+        options:
+          - cleanup
+
+env:
+  FUNCTION_NAME: 'ai-chatbot-${{ github.sha }}'
+  S3_BUCKET_NAME: '${{ secrets.S3_BUCKET_NAME }}'
+  AWS_ACCOUNT_ID: '${{ secrets.AWS_ACCOUNT_ID }}'
+  AWS_REGION: 'us-east-1'
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: 'us-east-1'
+      - name: Download deployment details
+        uses: actions/download-artifact@v5
+        with:
+          name: deployment-details
+      - name: Remove Function URL Permission
+        run: |
+          aws lambda remove-permission \
+            --function-name "${FUNCTION_NAME}" \
+            --statement-id PublicAccessUrl
+      - name: Delete Function URL
+        run: |
+          aws lambda delete-function-url-config \
+            --function-name "${FUNCTION_NAME}"
+      - name: Remove Function Permission
+        run: |
+          aws lambda remove-permission \
+            --function-name "${FUNCTION_NAME}" \
+            --statement-id PublicAccessInvoke
+      - name: Delete Lambda Function
+        run: |
+          aws lambda delete-function \
+            --function-name "${FUNCTION_NAME}"
+      - name: Remove Deployment Package
+        run: |
+          aws s3 rm s3://${S3_BUCKET_NAME}/${FUNCTION_NAME}.zip

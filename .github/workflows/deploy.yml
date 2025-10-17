@@ -1,4 +1,4 @@
-name: Lambda CI/CD Pipeline
+name: Build Environment
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
       - main
   workflow_dispatch:
     inputs:
-      action_type:
+      target_job:
         description: 'Whether to deploy or clean up'
         required: true
         default: 'deploy'
