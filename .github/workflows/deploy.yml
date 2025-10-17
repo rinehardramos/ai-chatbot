@@ -125,8 +125,9 @@ jobs:
             --principal "*"
 
   cleanup:
+    needs: [deploy]
     runs-on: ubuntu-latest
-    if: github.event.action_type == 'cleanup'
+    if: github.event.action_type == 'cleanup' || github.event_name == 'push'
     steps:
       - uses: aws-actions/configure-aws-credentials@v1
         with:
