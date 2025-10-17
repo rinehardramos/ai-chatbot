@@ -45,7 +45,6 @@ jobs:
           zip ../lambda-deployment.zip *
           cd ..
           ls -la lambda-deployment.zip  # Verify package exists
-          pwd
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -76,9 +75,10 @@ jobs:
           else
             echo "$S3_BUCKET_NAME already exists, skipping creation"
           fi
+      - name: Download artifacts from the build
+        uses: actions/download-artifact@v5
       - name: Upload to S3
         run: |
-          pwd
           ls -la
           aws s3 cp lambda-deployment.zip s3://$S3_BUCKET_NAME/$FUNCTION_NAME.zip
       - name: Create Lambda Function if not exists
