@@ -1,27 +1,28 @@
 name: Lambda CI/CD Pipeline
+
 on:
   push:
     branches:
       - main
+  workflow_dispatch:
+    inputs:
+      action_type:
+        description: 'Whether to deploy or clean up'
+        required: true
+        default: 'deploy'
+        choices: ['deploy', 'cleanup']
+
 env:
   FUNCTION_NAME: 'ai-chatbot-${{ github.sha }}'
   S3_BUCKET_NAME: '${{ secrets.S3_BUCKET_NAME }}'
   AWS_ACCOUNT_ID: '${{ secrets.AWS_ACCOUNT_ID }}'
+  REGION: '${REGION}'
+
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: 'us-east-1'
-      - name: Check IAM Role
-        run: |
-          aws iam get-role --role-name LambdaExecutionRole > /dev/null || \
-          echo "Error: LambdaExecutionRole does not exist"
       - name: Setup Node.js
         uses: actions/setup-node@v2
         with:
@@ -29,6 +30,10 @@ jobs:
       - name: Install Dependencies
         run: |
           npm ci
+      - name: Test Lambda
+        continue-on-error: false
+        run: |
+          npm test -- --passWithNoTests
       - name: Build Lambda Package
         run: |
           npm run build
@@ -38,53 +43,107 @@ jobs:
           cd deploy-package
           cat index.js
           zip ../lambda-deployment.zip *
-      - name: Test Lambda
-        continue-on-error: false
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [build]
+    if: github.event.action_type == 'deploy'
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: '${REGION}'
+      - name: Check IAM Role
         run: |
-          npm test -- --passWithNoTests
+          aws iam get-role --role-name LambdaExecutionRole > /dev/null || \
+          echo "Error: LambdaExecutionRole does not exist"
       - name: Create S3 Bucket if not exists
         run: |
-          if ! aws s3 ls s3://$S3_BUCKET_NAME 2>/dev/null; then
-            echo "Creating S3 bucket $S3_BUCKET_NAME"
-            aws s3 mb s3://$S3_BUCKET_NAME --region us-east-1
+          if ! aws s3 ls s3://${S3_BUCKET_NAME} 2>/dev/null; then
+            echo "Creating S3 bucket ${S3_BUCKET_NAME}"
+            aws s3 mb s3://${S3_BUCKET_NAME} --region ${REGION}
           else
-            echo "S3 bucket $S3_BUCKET_NAME already exists, skipping creation"
+            echo "${S3_BUCKET_NAME} already exists, skipping creation"
           fi
       - name: Upload to S3
         run: |
-          aws s3 cp lambda-deployment.zip s3://$S3_BUCKET_NAME/$FUNCTION_NAME.zip
+          aws s3 cp lambda-deployment.zip s3://${S3_BUCKET_NAME}/${FUNCTION_NAME}.zip
       - name: Create Lambda Function if not exists
         run: |
-          if ! aws lambda get-function-configuration --function-name $FUNCTION_NAME 2>/dev/null; then
-            echo "Creating Lambda function $FUNCTION_NAME"
+          if ! aws lambda get-function-configuration --function-name ${FUNCTION_NAME} 2>/dev/null; then
+            echo "Creating Lambda function ${FUNCTION_NAME}"
             aws lambda create-function \
-              --function-name $FUNCTION_NAME \
+              --function-name ${FUNCTION_NAME} \
               --runtime nodejs18.x \
-              --role arn:aws:iam::$AWS_ACCOUNT_ID:role/LambdaExecutionRole \
+              --role arn:aws:iam::${AWS_ACCOUNT_ID}:role/LambdaExecutionRole \
               --handler index.handler \
-              --code S3Bucket=$S3_BUCKET_NAME,S3Key=$FUNCTION_NAME.zip \
+              --code S3Bucket=${S3_BUCKET_NAME},S3Key=${FUNCTION_NAME}.zip \
               --publish
           else
-            echo "Lambda function $FUNCTION_NAME already exists, updating"
+            echo "${FUNCTION_NAME} already exists, updating"
             aws lambda update-function-code \
-              --function-name $FUNCTION_NAME \
-              --s3-bucket $S3_BUCKET_NAME \
-              --s3-key $FUNCTION_NAME.zip \
+              --function-name ${FUNCTION_NAME} \
+              --s3-bucket ${S3_BUCKET_NAME} \
+              --s3-key ${FUNCTION_NAME}.zip \
               --publish
           fi
       - name: Create Function URL
         run: |
           aws lambda create-function-url-config \
-          --cli-input-json '{
-            "FunctionName": "'${FUNCTION_NAME}'",
-            "AuthType": "NONE",
-            "Cors": {
-              "AllowHeaders": ["Content-Type", "X-Amz-Date", "Authorization"],
-              "AllowOrigins": ["*"],
-              "AllowMethods": ["GET", "POST"]
-            }
-          }'
-      - name: Verify Deployment
+            --cli-input-json '{
+              "FunctionName": "'${FUNCTION_NAME}'",
+              "AuthType": "NONE",
+              "Cors": {
+                "AllowHeaders": ["Content-Type", "X-Amz-Date", "Authorization"],
+                "AllowOrigins": ["*"],
+                "AllowMethods": ["GET", "POST"]
+              }
+            }'
+      - name: Add Permissions
         run: |
-          aws lambda get-function-configuration --function-name $FUNCTION_NAME
-          aws lambda get-function-url-config --function-name $FUNCTION_NAME
+          aws lambda add-permission --function-name ${FUNCTION_NAME} \
+            --statement-id PublicAccessUrl \
+            --action lambda:InvokeFunctionUrl \
+            --principal "*" \
+            --function-url-auth-type NONE
+          aws lambda add-permission --function-name ${FUNCTION_NAME} \
+            --statement-id PublicAccessInvoke \
+            --action lambda:InvokeFunction \
+            --principal "*"
+
+  cleanup:
+    runs-on: ubuntu-latest
+    if: github.event.action_type == 'cleanup'
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: '${REGION}'
+
+      - name: Remove Function URL Permission
+        run: |
+          aws lambda remove-permission \
+            --function-name "${FUNCTION_NAME}" \
+            --statement-id PublicAccessUrl
+
+      - name: Delete Function URL
+        run: |
+          aws lambda delete-function-url-config \
+            --function-name "${FUNCTION_NAME}"
+
+      - name: Remove Function Permission
+        run: |
+          aws lambda remove-permission \
+            --function-name "${FUNCTION_NAME}" \
+            --statement-id PublicAccessInvoke
+
+      - name: Delete Lambda Function
+        run: |
+          aws lambda delete-function \
+            --function-name "${FUNCTION_NAME}"
+
+      - name: Remove Deployment Package
+        run: |
+          aws s3 rm s3://${S3_BUCKET_NAME}/${FUNCTION_NAME}.zip
