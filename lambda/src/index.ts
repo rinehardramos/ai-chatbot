@@ -7,8 +7,8 @@ import {
 } from "@aws-sdk/client-bedrock-runtime";
 
 interface LambdaRequest {
+  message: string;
   body: string;
-  prompt?: string;
 }
 
 interface LambdaResponse {
@@ -49,7 +49,7 @@ export const handler = async (
 
     // Configure the request with inference parameters
     const requestConfig: InvokeModelCommandInput = {
-      body: request.body || "",
+      body: request.message || "",
       contentType: "application/json",
       accept: "application/json",
       modelId: modelId,
