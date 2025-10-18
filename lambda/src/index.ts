@@ -54,8 +54,6 @@ export const handler = async (
             role: ConversationRole.USER,
             content: [{ text: request.message }]
             }],
-            max_tokens_to_sample: 512,
-            temperature: 0.5
         }),
             contentType: "application/json",
             accept: "application/json",
