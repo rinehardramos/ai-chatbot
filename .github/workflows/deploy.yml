@@ -1,4 +1,4 @@
-name: Build Environment
+name: Build Lambda Function
 
 on:
   push:
@@ -60,7 +60,6 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     needs: [build]
-    if: ${{ github.event.inputs.target_job == 'deploy' }}
     steps:
       - uses: aws-actions/configure-aws-credentials@v1
         with:
