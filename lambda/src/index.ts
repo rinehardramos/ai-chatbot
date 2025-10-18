@@ -1,48 +1,85 @@
-import { APIGatewayEventRequestContext, APIGatewayProxyEventV2, APIGatewayProxyResultV2 } from 'aws-lambda';
+import {
+  BedrockRuntimeClient,
+  InvokeModelCommand,
+  InvokeModelCommandInput,
+  InvokeModelCommandOutput,
+  ConversationRole,
+} from "@aws-sdk/client-bedrock-runtime";
 
-// Define types for request and response bodies
-interface GetRequest {
-    params?: Record<string, string | undefined>;
-    query?: Record<string, string | undefined>;
+interface LambdaRequest {
+  body: string;
+  prompt?: string;
 }
-interface PostRequest {
-    body: Record<string, any>;
+
+interface LambdaResponse {
+  response: string;
+  timestamp: string;
+}
+
+interface LambdaError {
+  error: string;
+  message: string;
 }
 
 export const handler = async (
-    event: APIGatewayProxyEventV2,
-    context: APIGatewayEventRequestContext
-): Promise<APIGatewayProxyResultV2> => {
-    try {
-        // Send immediate response for testing
-        const immediateResponse: APIGatewayProxyResultV2 = {
-            statusCode: 200,
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                message: 'Test response received',
-                timestamp: new Date().toISOString(),
-                eventMethod: event.requestContext.http.method
-            })
-        };
+  event: { body?: string },
+  context: any
+): Promise<{
+  statusCode: number;
+  headers: { 'Content-Type': string };
+  body: string;
+}> => {
+  try {
+    // Parse incoming request body
+    const requestBody = typeof event.body === 'string' ? JSON.parse(event.body) : event.body;
+    const request: LambdaRequest = requestBody || {};
 
-        // Log the event for debugging
-        console.log('Event received:', JSON.stringify(event, null, 2));
+    // Initialize Bedrock Runtime client
+    const client = new BedrockRuntimeClient({ region: "us-east-1" });
 
-        // Return the immediate response
-        return immediateResponse;
-    } catch (error) {
-        console.error('Error handling request:', error);
-        return {
-            statusCode: 500,
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                error: 'Internal Server Error',
-                message: error instanceof Error ? error.message : 'Unknown error'
-            })
-        };
-    }
+    // Configure the model and prompt
+    const modelId = "amazon.nova-lite-v1:0";
+    // const prompt = request.prompt || "Please provide a prompt in the request body";
+
+    // Create the message structure
+    // const message = {
+    //   content: [{ text: inputText }],
+    //   role: ConversationRole.USER,
+    // };
+
+    // Configure the request with inference parameters
+    const requestConfig: InvokeModelCommandInput = {
+      body: request.body || "",
+      contentType: "application/json",
+      accept: "application/json",
+      modelId: modelId,
+    };
+
+    // Send the request and get response
+    const response: InvokeModelCommandOutput = await client.send(new InvokeModelCommand(requestConfig));
+
+    // Return the response
+    return {
+      statusCode: 200,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        response: 'Model invoked successfully',
+        timestamp: new Date().toISOString()
+      } as LambdaResponse)
+    };
+  } catch (error) {
+    console.error('Error invoking model:', error);
+    return {
+      statusCode: 500,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        error: 'Internal Server Error',
+        message: error instanceof Error ? error.message : 'Unknown error'
+      } as LambdaError)
+    };
+  }
 };
