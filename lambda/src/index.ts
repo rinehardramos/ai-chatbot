@@ -39,17 +39,17 @@ export const handler = async (
 
     // Configure the model and prompt
     const modelId = "amazon.nova-lite-v1:0";
-    // const prompt = request.prompt || "Please provide a prompt in the request body";
+    const inputText = request.message || "Please provide a prompt in the request body";
 
     // Create the message structure
-    // const message = {
-    //   content: [{ text: inputText }],
-    //   role: ConversationRole.USER,
-    // };
+    const message = {
+      content: [{ text: inputText }],
+      role: ConversationRole.USER,
+    };
 
     // Configure the request with inference parameters
     const requestConfig: InvokeModelCommandInput = {
-      body: request.message || "",
+      body: inputText || "",
       contentType: "application/json",
       accept: "application/json",
       modelId: modelId,
@@ -58,6 +58,8 @@ export const handler = async (
     // Send the request and get response
     const response: InvokeModelCommandOutput = await client.send(new InvokeModelCommand(requestConfig));
 
+    const responseBody = JSON.parse(response.body.toString());
+    const modelResponse = responseBody.completions[0]?.data?.text || '';
     // Return the response
     return {
       statusCode: 200,
@@ -65,7 +67,7 @@ export const handler = async (
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        response: 'Model invoked successfully',
+        response: modelResponse,
         timestamp: new Date().toISOString()
       } as LambdaResponse)
     };
