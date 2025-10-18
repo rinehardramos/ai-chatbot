@@ -39,29 +39,35 @@ export const handler = async (
 
     // Configure the model and prompt
     const modelId = "amazon.nova-lite-v1:0";
-    const inputText = request.message || "Please provide a prompt in the request body";
-
-    // Create the message structure
-    const message = {
-      content: [{ text: inputText }],
-      role: ConversationRole.USER,
-    };
+    // const inputText = request.message || "Please provide a prompt in the request body";
 
     // Configure the request with inference parameters
-    const requestConfig: InvokeModelCommandInput = {
+    // const requestConfig: InvokeModelCommandInput = {
+    //     body: JSON.stringify({
+    //         messages: [{
+    //                 role: ConversationRole.USER,
+    //                 content: [{ text: request.message }]
+    //             }]
+    //     }),
+    //     contentType: "application/json",
+    //     accept: "application/json",
+    //     modelId: modelId
+    // };
+
+    const input = {
         body: JSON.stringify({
-            messages: [{
-            role: ConversationRole.USER,
-            content: [{ text: request.message }]
-            }],
+            inputText: "Please recommend books with a theme similar to the movie 'Inception'."
         }),
-            contentType: "application/json",
-            accept: "application/json",
-            modelId: modelId,
-        };
+        contentType: "application/json",
+        accept: "application/json",
+        modelId: "amazon.titan-embed-text-v2:0"
+    };
+
+    const command = new InvokeModelCommand(input);
+    const response = await client.send(command);
 
     // Send the request and get response
-    const response: InvokeModelCommandOutput = await client.send(new InvokeModelCommand(requestConfig));
+    // const response: InvokeModelCommandOutput = await client.send(new InvokeModelCommand(requestConfig));
 
     const responseBody = JSON.parse(response.body.toString());
     const modelResponse = responseBody.completions[0]?.data?.text || '';
