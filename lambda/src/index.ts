@@ -49,11 +49,18 @@ export const handler = async (
 
     // Configure the request with inference parameters
     const requestConfig: InvokeModelCommandInput = {
-      body: inputText || "",
-      contentType: "application/json",
-      accept: "application/json",
-      modelId: modelId,
-    };
+        body: JSON.stringify({
+            messages: [{
+            role: ConversationRole.USER,
+            content: [{ text: request.message }]
+            }],
+            max_tokens_to_sample: 512,
+            temperature: 0.5
+        }),
+            contentType: "application/json",
+            accept: "application/json",
+            modelId: modelId,
+        };
 
     // Send the request and get response
     const response: InvokeModelCommandOutput = await client.send(new InvokeModelCommand(requestConfig));
