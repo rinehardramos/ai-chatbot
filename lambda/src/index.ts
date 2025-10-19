@@ -30,16 +30,13 @@ export const handler = async (
   headers: { 'Content-Type': string };
   body: string;
 }> => {
+  
   try {
-    // Parse incoming request body
-    const requestBody = typeof event.body === 'string' ? JSON.parse(event.body) : event.body;
-    // const request: LambdaRequest = requestBody || {};
-
-    // Initialize Bedrock Runtime client
     const client = new BedrockRuntimeClient({ region: "us-east-1" });
 
-    // Configure the model and prompt
     const modelId = "amazon.nova-lite-v1:0";
+
+    const requestBody = typeof event.body === 'string' ? JSON.parse(event.body) : event.body;
     
     const messageContent = requestBody?.message ?? 
             (typeof requestBody === 'string' ? requestBody : 
@@ -49,15 +46,6 @@ export const handler = async (
         content: [{ text: messageContent }],
         role: ConversationRole.USER,
     };
-
-    // const input = {
-    //     body: JSON.stringify({
-    //         inputText: "Please recommend books with a theme similar to the movie 'Inception'."
-    //     }),
-    //     contentType: "application/json",
-    //     accept: "application/json",
-    //     modelId: "amazon.titan-embed-text-v2:0"
-    // };
 
     const request = {
         modelId,
@@ -84,7 +72,6 @@ export const handler = async (
         } else {
             console.log('Invalid response structure');
         }
-        // console.log(response.output.message.content[0].text);
     } catch (error) {
         if (error instanceof Error) {
             console.error(`ERROR: Can't invoke '${modelId}'. Reason: ${error.message}`);
@@ -93,16 +80,7 @@ export const handler = async (
         }
     }
 
-    // const command = new InvokeModelCommand(input);
-    // const response = await client.send(command);
-
-    // Send the request and get response
-    // const response: InvokeModelCommandOutput = await client.send(new InvokeModelCommand(requestConfig));
-
-    // const responseBody = JSON.parse(response.body.toString());
-    // const modelResponse = responseBody.completions[0]?.data?.text || '';
-    // // Return the response
-    return {
+  return {
       statusCode: 200,
       headers: {
         'Content-Type': 'application/json',

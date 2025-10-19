@@ -41,14 +41,11 @@ jobs:
       - name: Build Lambda Package
         run: |
           npm run build
-          ls dist/lambda/src
           mkdir deploy-package
           cp dist/lambda/src/index.js deploy-package/
           cd deploy-package
-          cat index.js
           zip ../lambda-deployment.zip *
           cd ..
-          ls -la lambda-deployment.zip  # Verify package exists
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
