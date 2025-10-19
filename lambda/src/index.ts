@@ -40,24 +40,13 @@ export const handler = async (
 
     // Configure the model and prompt
     const modelId = "amazon.nova-lite-v1:0";
-    // const inputText = request.message || "Please provide a prompt in the request body";
-
-    // Configure the request with inference parameters
-    // const requestConfig: InvokeModelCommandInput = {
-    //     body: JSON.stringify({
-    //         messages: [{
-    //                 role: ConversationRole.USER,
-    //                 content: [{ text: request.message }]
-    //             }]
-    //     }),
-    //     contentType: "application/json",
-    //     accept: "application/json",
-    //     modelId: modelId
-    // };
-
-    const inputText = "Describe the purpose of a 'hello world' program in one line.";
+    
+    const messageContent = requestBody?.message ?? 
+            (typeof requestBody === 'string' ? requestBody : 
+            "No message content provided");
+  
     const message = {
-        content: [{ text: inputText }],
+        content: [{ text: messageContent }],
         role: ConversationRole.USER,
     };
 
